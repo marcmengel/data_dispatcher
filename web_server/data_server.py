@@ -55,11 +55,12 @@ class Handler(BaseHandler):
         if idle_timeout is not None:
             idle_timeout = timedelta(seconds=idle_timeout)
         attributes = specs.get("project_attributes", {})
+        virtual = specs.get("virtual", None)
         #print("opening DB...")
         db = self.App.db()
         #print("calling DBProject.create()...")
         project = DBProject.create(db, user.Username, attributes=attributes, query=query, worker_timeout=worker_timeout,
-                        idle_timeout=idle_timeout, users=specs.get("users", []), roles=specs.get("roles", []))
+                        idle_timeout=idle_timeout, users=specs.get("users", []), roles=specs.get("roles", []), virtual=virtual)
         files_converted = []
         for f in files:
             if isinstance(f, str):
@@ -242,7 +243,7 @@ class Handler(BaseHandler):
             }
         else:
             pmap = self.App.proximity_map()
-            info = handle.as_jsonable(with_replicas=True)
+            info = handle.as_jsonable(with_replicas=not self.Virtual)
             info["replicas"] = {
                     rse: r for rse, r in info["replicas"].items() 
                     if r["available"] and r["rse_available"]

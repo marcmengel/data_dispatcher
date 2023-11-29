@@ -356,7 +356,8 @@ class DBProject(DBObject, HasLogRecord):
     LogTable = "project_log"
     
     def __init__(self, db, id, owner=None, created_timestamp=None, end_timestamp=None, state=None, 
-                retry_count=None, attributes={}, query=None, worker_timeout=None, idle_timeout=None):
+                retry_count=None, attributes={}, query=None, worker_timeout=None, idle_timeout=None,
+                virtual=None):
         self.DB = db
         self.ID = id
         self.Owner = owner
@@ -372,6 +373,7 @@ class DBProject(DBObject, HasLogRecord):
         self.IdleTimeout = to_timedelta(idle_timeout)
         self.Users = DBManyToMany(db, "project_users", {"project_id":id}, ["username"], [], DBUser, dst_table="metacat.users")    # if other than the owner
         self.Roles = DBManyToMany(db, "project_roles", {"project_id":id}, ["role_name"], [], DBRole, dst_table="metacat.roles")
+        self.Virtual = virtual  # should probably be in the database, but for now just a flag -- mengel
 
     def pk(self):
         return (self.ID,)
@@ -674,7 +676,7 @@ class DBProject(DBObject, HasLogRecord):
         
     @transactioned
     def reserve_handle(self, worker_id, transaction=None):
-        handle = DBFileHandle.reserve_for_worker(self.DB, self.ID, worker_id, transaction=transaction)
+        handle = DBFileHandle.reserve_for_worker(self.DB, self.ID, worker_id, transaction=transaction, virtual=self.Virtual)
         if handle is not None:
             return handle, "ok", False
             
@@ -1453,28 +1455,41 @@ class DBFileHandle(DBObject, HasLogRecord):
     def project(self):
         return DBProject.get(self.DB, self.ProjectID)
 
+
     @staticmethod
     @transactioned
-    def reserve_for_worker(db, project_id, worker_id, transaction=None):
+    def reserve_for_worker(db, project_id, worker_id, transaction=None, virtual=None):
         h_table = DBFileHandle.Table
         rep_table = DBReplica.Table
         rse_table = DBRSE.Table
         reserved = None
-        sql = f"""
-                select h.namespace, h.name
-                    from {h_table} h
-                    where 
-                        h.project_id = %s and h.state = %s
-                        and exists (
-                            select * from {rep_table} r, {rse_table} s
-                                where h.namespace = r.namespace and h.name = r.name 
-                                    and r.rse = s.name
-                                    and s.is_enabled and s.is_available
-                        )
-                    order by attempts
-                    limit 1
-                    for update skip locked
-        """
+        if virtual:
+            # do not worry about replicas
+            sql = f"""
+                    select h.namespace, h.name
+                        from {h_table} h
+                        where 
+                            h.project_id = %s and h.state = %s
+                        order by attempts
+                        limit 1
+                        for update skip locked
+            """
+        else:
+            sql = f"""
+                    select h.namespace, h.name
+                        from {h_table} h
+                        where 
+                            h.project_id = %s and h.state = %s
+                            and exists (
+                                select * from {rep_table} r, {rse_table} s
+                                    where h.namespace = r.namespace and h.name = r.name 
+                                        and r.rse = s.name
+                                        and s.is_enabled and s.is_available
+                            )
+                        order by attempts
+                        limit 1
+                        for update skip locked
+            """
         #print("sql:\n", sql)
         transaction.execute(sql, (project_id, DBFileHandle.ReadyState))
         tup = transaction.fetchone()

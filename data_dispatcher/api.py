@@ -132,7 +132,7 @@ class DataDispatcherClient(HTTPClient, TokenAuthClientMixin):
     DEFAULT_IDLE_TIMEOUT = 72*3600      # 72 hors
     
     def create_project(self, files, common_attributes={}, project_attributes={}, query=None, worker_timeout=None,
-            idle_timeout = DEFAULT_IDLE_TIMEOUT, users=[], roles=[]):
+            idle_timeout = DEFAULT_IDLE_TIMEOUT, users=[], roles=[], virtual=None):
         """Creates new project
         
         Parameters
@@ -156,6 +156,8 @@ class DataDispatcherClient(HTTPClient, TokenAuthClientMixin):
             creator.
         roles : list of strings
             List of roles, members of which are authorized to use the worker interface.
+        virtual: boolean
+            If true, do not look for or care about file locations
 
         Returns
         -------
