@@ -186,7 +186,8 @@ class DataDispatcherClient(HTTPClient, TokenAuthClientMixin):
                     "worker_timeout":       worker_timeout,
                     "idle_timeout":         idle_timeout,
                     "users":                users or [],
-                    "roles":                roles or []
+                    "roles":                roles or [],
+                    "virtual":              virtual or False,
                 }
             )
         )
