@@ -356,8 +356,7 @@ class DBProject(DBObject, HasLogRecord):
     LogTable = "project_log"
     
     def __init__(self, db, id, owner=None, created_timestamp=None, end_timestamp=None, state=None, 
-                retry_count=None, attributes={}, query=None, worker_timeout=None, idle_timeout=None,
-                virtual=None):
+                retry_count=None, attributes={}, query=None, worker_timeout=None, idle_timeout=None):
         self.DB = db
         self.ID = id
         self.Owner = owner
@@ -373,7 +372,6 @@ class DBProject(DBObject, HasLogRecord):
         self.IdleTimeout = to_timedelta(idle_timeout)
         self.Users = DBManyToMany(db, "project_users", {"project_id":id}, ["username"], [], DBUser, dst_table="metacat.users")    # if other than the owner
         self.Roles = DBManyToMany(db, "project_roles", {"project_id":id}, ["role_name"], [], DBRole, dst_table="metacat.roles")
-        self.Virtual = virtual  # should probably be in the database, but for now just a flag -- mengel
 
     def pk(self):
         return (self.ID,)
@@ -675,8 +673,8 @@ class DBProject(DBObject, HasLogRecord):
         DBFileHandle.create_many(self.DB, self.ID, files_descs)
         
     @transactioned
-    def reserve_handle(self, worker_id, transaction=None):
-        handle = DBFileHandle.reserve_for_worker(self.DB, self.ID, worker_id, transaction=transaction, virtual=self.Virtual)
+    def reserve_handle(self, worker_id, transaction=None, virtual=False):
+        handle = DBFileHandle.reserve_for_worker(self.DB, self.ID, worker_id, transaction=transaction, virtual=virtual)
         if handle is not None:
             return handle, "ok", False
             
