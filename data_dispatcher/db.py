@@ -673,8 +673,8 @@ class DBProject(DBObject, HasLogRecord):
         DBFileHandle.create_many(self.DB, self.ID, files_descs)
         
     @transactioned
-    def reserve_handle(self, worker_id, transaction=None):
-        handle = DBFileHandle.reserve_for_worker(self.DB, self.ID, worker_id, transaction=transaction)
+    def reserve_handle(self, worker_id, transaction=None, virtual=False):
+        handle = DBFileHandle.reserve_for_worker(self.DB, self.ID, worker_id, transaction=transaction, virtual=virtual)
         if handle is not None:
             return handle, "ok", False
             
@@ -1457,28 +1457,41 @@ class DBFileHandle(DBObject, HasLogRecord):
     def project(self):
         return DBProject.get(self.DB, self.ProjectID)
 
+
     @staticmethod
     @transactioned
-    def reserve_for_worker(db, project_id, worker_id, transaction=None):
+    def reserve_for_worker(db, project_id, worker_id, transaction=None, virtual=None):
         h_table = DBFileHandle.Table
         rep_table = DBReplica.Table
         rse_table = DBRSE.Table
         reserved = None
-        sql = f"""
-                select h.namespace, h.name
-                    from {h_table} h
-                    where 
-                        h.project_id = %s and h.state = %s
-                        and exists (
-                            select * from {rep_table} r, {rse_table} s
-                                where h.namespace = r.namespace and h.name = r.name 
-                                    and r.rse = s.name
-                                    and s.is_enabled and s.is_available
-                        )
-                    order by attempts
-                    limit 1
-                    for update skip locked
-        """
+        if virtual:
+            # do not worry about replicas
+            sql = f"""
+                    select h.namespace, h.name
+                        from {h_table} h
+                        where 
+                            h.project_id = %s and h.state = %s
+                        order by attempts
+                        limit 1
+                        for update skip locked
+            """
+        else:
+            sql = f"""
+                    select h.namespace, h.name
+                        from {h_table} h
+                        where 
+                            h.project_id = %s and h.state = %s
+                            and exists (
+                                select * from {rep_table} r, {rse_table} s
+                                    where h.namespace = r.namespace and h.name = r.name 
+                                        and r.rse = s.name
+                                        and s.is_enabled and s.is_available
+                            )
+                        order by attempts
+                        limit 1
+                        for update skip locked
+            """
         #print("sql:\n", sql)
         transaction.execute(sql, (project_id, DBFileHandle.ReadyState))
         tup = transaction.fetchone()
