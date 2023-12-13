@@ -8,7 +8,7 @@ from .cli.tabular import Table, Column
 
 class CreateCommand(CLICommand):
     
-    Opts = "q:c:l:j:A:a:t:p:w:u:r:v"
+    Opts = "q:c:l:j:A:a:t:p:w:u:r"
     Usage = """[options] [inline MQL query]         -- create project
 
         Use an inline query or one of the following to provide file list:
@@ -32,7 +32,6 @@ class CreateCommand(CLICommand):
 
         -p (json|pprint|id)                             - print created project info as JSON, 
                                                           pprint or just project id (default)
-        -v                                              - "virtual" project -- no locations required
     """
     
     FileProperties = "fid,namespace,name,checksums,size,creator,created_timestamp,parents,children,datasets".split(',') # from metacat.dbobjects2
@@ -131,10 +130,6 @@ class CreateCommand(CLICommand):
         else:
             idle_timeout = 72*3600
 
-        virtual=False
-        if opts.get("v"):
-           virtual=True
-
         #print("files:", files)
         #print("calling API.client.create_project...")
         #print("")
@@ -143,7 +138,7 @@ class CreateCommand(CLICommand):
             sys.exit(1)
         info = client.create_project(files, common_attributes=common_attrs, project_attributes=project_attrs, query=query, 
                     worker_timeout=worker_timeout, idle_timeout=idle_timeout,
-                    users=users, roles=roles, virtual=virtual)
+                    users=users, roles=roles)
         printout = opts.get("-p", "id")
         if printout == "json":
             print(pretty_json(info))
