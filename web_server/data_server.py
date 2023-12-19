@@ -272,21 +272,21 @@ class Handler(BaseHandler):
         elif project.State != "active":
             return 400, f"Inactive project. State={project.State}"
         handle, reason, retry = project.reserve_handle(
-            worker_id, virtual=project.attributes.get("virtual", False)
+            worker_id, virtual=project.Attributes.get("virtual", False)
         )
         if handle is None:
             out = {"handle": None, "reason": reason, "retry": retry}
         else:
             pmap = self.App.proximity_map()
             info = handle.as_jsonable(
-                with_replicas=not self.attributes.get("virtual", False)
+                with_replicas=not project.Attributes.get("virtual", False)
             )
             info["replicas"] = {
                 rse: r
-                for rse, r in info["replicas"].items()
+                for rse, r in info.get("replicas",{}).items()
                 if r["available"] and r["rse_available"]
             }
-            for rse, r in info["replicas"].items():
+            for rse, r in info.get("replicas",{}).items():
                 try:
                     proximity = pmap.proximity(cpu_site, rse)
                 except KeyError:
