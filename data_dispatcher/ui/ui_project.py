@@ -8,7 +8,7 @@ from .cli.tabular import Table, Column
 
 class CreateCommand(CLICommand):
     
-    Opts = "q:c:l:j:A:a:t:p:w:u:r"
+    Opts = "q:c:l:j:A:a:t:p:w:u:r:"
     Usage = """[options] [inline MQL query]         -- create project
 
         Use an inline query or one of the following to provide file list:
