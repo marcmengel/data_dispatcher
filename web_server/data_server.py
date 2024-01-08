@@ -245,7 +245,7 @@ class Handler(BaseHandler):
             pmap = self.App.proximity_map()
             info = handle.as_jsonable(with_replicas=not self.attributes.get('virtual',False))
             info["replicas"] = {
-                    rse: r for rse, r in info["replicas"].items() 
+                    rse: r for rse, r in info.get("replicas",{}].items() 
                     if r["available"] and r["rse_available"]
             }
             for rse, r in info["replicas"].items():
