@@ -15,28 +15,29 @@ def to_bytes(x):
     if not isinstance(x, bytes):
         x = x.encode("utf-8")
     return x
-    
+
 def to_str(x):
     if isinstance(x, bytes):
         x = x.decode("utf-8")
     return x
-    
+
 class Handler(BaseHandler):
-    
+
     def __init__(self, request, app):
         BaseHandler.__init__(self, request, app)
         self.auth = AuthHandler(request, app)
-        
+
     def version(self, request, relpath, **args):
         return Version
-        
+
     def probe(self, request, relpath, **args):
-        try:    db = self.App.db()
+        try:
+            db = self.App.db()
         except:
             return 500, "Database connection error"
         else:
             return "OK"
-    
+
     def create_project(self, request, relpath, **args):
         #print("create_project()...")
         user, error = self.authenticated_user()
@@ -85,14 +86,14 @@ class Handler(BaseHandler):
         project.add_files(files_converted)
         self.App.project_created(project.ID)
         return json.dumps(project.as_jsonable(with_handles=True)), "text/json"
-        
+
     def delete_project(self, request, relpath, project_id=None, **args):
         if not project_id:
             return 400, "Project id must be specified"
         user, error = self.authenticated_user()
         if user is None:
             return 401, error
-        
+
         project_id = int(project_id)
         db = self.App.db()
         project = DBProject.get(db, project_id)
@@ -102,14 +103,14 @@ class Handler(BaseHandler):
             return 403, "Forbidden"
         project.delete()
         return "null", "text/json"
-        
+
     def activate_project(self, request, relpath, project_id=None, **args):
         if not project_id:
             return 400, "Project id must be specified"
         user, error = self.authenticated_user()
         if user is None:
             return 401, error
-           
+
         project_id = int(project_id)
         db = self.App.db()
         project = DBProject.get(db, project_id)
@@ -128,7 +129,7 @@ class Handler(BaseHandler):
         user, error = self.authenticated_user()
         if user is None:
             return 401, error
-           
+
         project_id = int(project_id)
         db = self.App.db()
         project = DBProject.get(db, project_id)
@@ -138,14 +139,14 @@ class Handler(BaseHandler):
             return 403, "Forbidden"
         project.restart(force=force, failed_only=failed_only)
         return json.dumps(project.as_jsonable(with_replicas=True)), "text/json"
-        
+
     def restart_handles(self, request, relpath, **args):
         params = json.loads(to_str(request.body))
         project_id = params.get("project_id")
         if not project_id:
             return 400, "Project id must be specified"
         project_id = int(project_id)
-            
+
         user, error = self.authenticated_user()
         if user is None:
             return 401, error
@@ -165,7 +166,7 @@ class Handler(BaseHandler):
             project.restart_handles(states=states)
 
         return json.dumps(project.as_jsonable(with_replicas=True)), "text/json"
-        
+
     def copy_project(self, request, relpath, **args):
         user, error = self.authenticated_user()
         if user is None:
@@ -205,7 +206,7 @@ class Handler(BaseHandler):
         user, error = self.authenticated_user()
         if user is None:
             return 401, error
-        
+
         project_id = int(project_id)
         db = self.App.db()
         project = DBProject.get(db, project_id)
@@ -215,7 +216,7 @@ class Handler(BaseHandler):
             return 403, "Forbidden"
         project.cancel()
         return json.dumps(project.as_jsonable(with_replicas=True)), "text/json"
-        
+
     def next_file(self, request, relpath, project_id=None, worker_id=None, cpu_site=None, **args):
         #print("next_file...")
         user, error = self.authenticated_user()
@@ -245,11 +246,12 @@ class Handler(BaseHandler):
             pmap = self.App.proximity_map()
             info = handle.as_jsonable(with_replicas=not self.attributes.get('virtual',False))
             info["replicas"] = {
-                    rse: r for rse, r in info.get("replicas",{}].items() 
+                    rse: r for rse, r in info.get("replicas", {}).items()
                     if r["available"] and r["rse_available"]
             }
-            for rse, r in info["replicas"].items():
-                try:    proximity = pmap.proximity(cpu_site, rse)
+            for rse, r in info.get("replicas", {}).items():
+                try:
+                    proximity = pmap.proximity(cpu_site, rse)
                 except KeyError:
                     proximity = None
                 r["preference"] = r["proximity"] = proximity
@@ -278,10 +280,10 @@ class Handler(BaseHandler):
 
         if not user.is_admin() and user.Username != project.Owner:
             return 403, "Not authorized"
-            
+
         failed = failed == "yes"
         retry = retry == "yes"
-        
+
         handle = project.release_handle(namespace, name, failed, retry)
         if handle is None:
             return 404, "Handle not found or was not reserved"
@@ -307,7 +309,7 @@ class Handler(BaseHandler):
 
         if not user.is_admin() and user.Username != project.Owner:
             return 403, "Not authorized"
-            
+
         force = force == "yes"
 
         handle = project.handle(namespace, name)
@@ -318,7 +320,7 @@ class Handler(BaseHandler):
 
         handle.reset()
         return json.dumps(handle.as_jsonable()), "text/json"
-        
+
     def project_files(self, request, relpath, project_id=None, state=None, ready_only="no", **args):
         if project_id is None:
             return 400, "Project ID must be specified"
@@ -371,7 +373,7 @@ class Handler(BaseHandler):
         sql = query.sql()
         db = self.App.db()
         projects = DBProject.from_sql(db, sql)
-        projects = (project for project in projects 
+        projects = (project for project in projects
             if (not owner or project.Owner == owner)
                 and (not state or project.State == state)
         )
@@ -396,24 +398,24 @@ class Handler(BaseHandler):
         if not handle:
             return "null", "text/json"
         return json.dumps(handle.as_jsonable(with_replicas=True)), "text/json"
-    
+
     def handles(self, request, relpath, project_id=None, state=None, not_state=None, with_replicas="no"):
         db = self.App.db()
         project_id = int(project_id)
         lst = DBFileHandle.list(db, project_id=project_id, not_state=not_state, state=state, with_replicas=with_replicas=="yes")
         return json.dumps([h.as_jsonable() for h in lst]), "text/json"
-        
+
     def rses(self, request, relpath, **args):
         rses = DBRSE.list(self.App.db())
         return json.dumps([r.as_jsonable() for r in rses]), "text/json"
-    
+
     def get_rse(self, request, relpath, name=None, **args):
         name = name or relpath
         rse = DBRSE.get(self.App.db(), name)
         if rse is None:
             return 404, f"RSE {name} not found"
         return json.dumps(rse.as_jsonable()), "text/json"
-    
+
     def set_rse_availability(self, request, relpath, name=None, available=None, **args):
         user, error = self.authenticated_user()
         if user is None:
@@ -431,7 +433,7 @@ class Handler(BaseHandler):
 
         rse.Available = available == "yes"
         rse.save()
-        
+
         return json.dumps(rse.as_jsonable()), "text/json"
 
 
@@ -447,7 +449,7 @@ class App(BaseApp, Logged):
         log_out = config.get("web_server",{}).get("log","-")
         init_logger(log_out, debug_enabled=True)
         self.init_auth_core(config)
-    
+
     def proximity_map(self):
         db = self.db()
         return DBProximityMap(db, defaults=self.ProximityMapDefaults, overrides=self.ProximityMapOverrides)
@@ -466,11 +468,11 @@ def create_application(config):
         config = yaml.load(open(config, "r"), Loader=yaml.SafeLoader)
     prefix = config.get("web_server", {}).get("data_prefix", "")
     return App(config, prefix)
-    
-        
+
+
 if __name__ == "__main__":
     import getopt, sys
-    
+
     opts, args = getopt.getopt(sys.argv[1:], "c:")
     opts = dict(opts)
     config = yaml.load(open(opts["-c"], "r"), Loader=yaml.SafeLoader)
@@ -479,5 +481,5 @@ if __name__ == "__main__":
     port = server_config.get("data_port", 8088)
     print(f"Starting at port {port}...")
     app.run_server(port, logging=False)
-    
-    
+
+
