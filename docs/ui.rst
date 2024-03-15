@@ -16,7 +16,7 @@ Data Dispatcher Commands
 Logging in
 ~~~~~~~~~~
 
-Before using Data Dispatcher UI, the user needs to log in. Logging in essentially means obraining an authentication/authorization token from
+Before using Data Dispatcher UI, the user needs to log in. Logging in essentially means obtaining an authentication/authorization token from
 the token issuer and storing it in local file system for use by the Data Dispatcher UI commands.
 
 Currently, Data Dispatcher supports 3 modes of authentication:
@@ -88,7 +88,7 @@ DID per line:
         $ ddisp project create -l file_list
 
 
-Third way is to yse JSON-formatted file list. The list is composed of items of one of two types:
+Third way is to use JSON-formatted file list. The list is composed of items of one of two types:
 
     - file DID as string
     - a dictionary with keys "namespace", "name" and optional "attributes":
@@ -125,7 +125,7 @@ for longer than the specified time interval, Data Dispatcher will automatically 
 another worker to allocate. Make sure the specified interval is long enough to avoid processing of the same file by multiple
 workers.
 
-The "dd project create" command prints information about the created project in 3 different formats, depending on 
+The "ddisp project create" command prints information about the created project in 3 different formats, depending on 
 the value of the ``-p`` option:
 
     .. code-block:: shell
@@ -164,12 +164,12 @@ release it and make available for another (or the same) worker to allocate. This
     
         $ ddisp project create -w (<worker timeout>[s|m|h|d] | none)
         
-the timeout value is numeric with optional suffix ``s``, ``m``, ``h`` or ``d``. If a suffix is used, then the timeout is set to the specified
+The timeout value is numeric with optional suffix ``s``, ``m``, ``h`` or ``d``. If a suffix is used, then the timeout is set to the specified
 number of seconds, minutes, hours or days respectively. ``none`` can be used to create a project without any worker timeout. Default worker timeout
 is 12 hours.
 
 Project idle timeout applies in the case, when a there is no worker file reserve/release activity for the project for the specified time interval.
-In this case, the Data Dispatcher moves the project into ``abandoned`` state. In this state, the Data Dispatcher stops updaitng file replica
+In this case, the Data Dispatcher moves the project into ``abandoned`` state. In this state, the Data Dispatcher stops updating file replica
 availability information for the project. Use ``-t`` option to specify this timeout:
 
     .. code-block:: shell
@@ -245,7 +245,7 @@ If the file list is specified explicitly using JSON file, then each file diction
         ]
         $ ddisp project create -j /tmp/file_list.json
         
-When the worker gets next file to process, the JSON representation of file inofrmation includes project and project file attributes:
+When the worker gets next file to process, the JSON representation of file information includes project and project file attributes:
 
     .. code-block:: shell
 
@@ -327,9 +327,9 @@ Searching projects
 
     .. code-block:: shell
 
-        $ ddisp project search [oprions] -q -              - read search query from stdin
-        $ ddisp project search [oprions] -q <file path>    - read search query from a file
-        $ ddisp project search [oprions] <search query>    - inline search query
+        $ ddisp project search [options] -q -              - read search query from stdin
+        $ ddisp project search [options] -q <file path>    - read search query from a file
+        $ ddisp project search [options] <search query>    - inline search query
         
         Options:
             -j                                          - JSON output
@@ -343,13 +343,15 @@ Copying project
 
     .. code-block:: shell
 
-        dd project copy [options] <project id>               -- copy project
+        $ ddisp project copy [options] <project id>               -- copy project
   
           -A @<file.json>                                 - JSON file with project attributes to override
           -A "name=value name=value ..."                  - project attributes to override
           -a @<file.json>                                 - JSON file with file attributes to override
           -a "name=value name=value ..."                  - file attributes to override
   
+          -t <worker timeout>|none                        - worker timeout to override
+
           -p (json|pprint|id)                             - print created project info as JSON, 
                                                             pprint or just project id (default)
 
@@ -536,7 +538,7 @@ If the file was processed successfully, the worker issues "done" command:
 
         $ ddisp worker done <project_id> <file namespace>:<file name>
         
-If the file processing failes, the worker issues "failed" command. "-f" option is used to signal that the file has failed permanently and should
+If the file processing failed, the worker issues "failed" command. "-f" option is used to signal that the file has failed permanently and should
 not be retried. Otherwise, the failed file will be moved to the back of the project's file list and given to a worker for consumption in the future.
 
     .. code-block:: shell

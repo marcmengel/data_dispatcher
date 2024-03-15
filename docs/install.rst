@@ -14,11 +14,11 @@ Alternatively:
 
     .. code-block:: shell
     
-        $ git clone https://github.com/ivmfnal/metacat.git
+        $ git clone https://github.com/fermitools/metacat.git
         $ cd metacat
         $ python setup.py install --user
         $ cd ..
-        $ git clone https://github.com/ivmfnal/data_dispatcher.git
+        $ git clone https://github.com/fermitools/data_dispatcher.git
         $ cd data_dispatcher
         $ python setup.py install --user
 

@@ -1,7 +1,7 @@
 Python API
 ==========
 
-Python API is recommended way for a client side Python appications to communicate with the Data Dispatcher server.
+Python API is the recommended way for client side Python applications to communicate with the Data Dispatcher server.
 To use the API, you need to install Data Dispatcher client module:
 
 .. code-block:: shell

@@ -1,14 +1,14 @@
 DD-SAM
 ======
 
-``dd-sam`` is a collecton command line tools implementing portions of SAM functionality, which require communication with more than one of
+``dd-sam`` is a collecton of command line tools implementing portions of SAM functionality, which require communication with more than one of
 the 3 components - Data Dispatcher, MetaCat and Rucio. Strictly speaking, Data Dispatcher interface already communicates with MetaCat and
 Data Dispatcher server when it is creating a project from the result of a MetaCat query.
 
 DD-SAM configuration
 --------------------
 
-Becaue ``dd-sam`` uses Rucio, MetaCat and Data Dispatcher clients, all 3 of them need to be configured properly. The following
+Because ``dd-sam`` uses Rucio, MetaCat and Data Dispatcher clients, all 3 of them need to be configured properly. The following
 environment variables can be used for that:
 
      * METACAT_SERVER_URL - MetaCat server URL

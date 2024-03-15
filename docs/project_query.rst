@@ -11,7 +11,7 @@ Each Data Dispatcher project has the following attributes:
     * id - integer - project id
     * query - string - MetaCat query used to select files for the project
 
-In addition, a project may have an arbitrary disctionary with user-defined project metadata. For example:
+In addition, a project may have an arbitrary dictionary with user-defined project metadata. For example:
 
    .. code-block::
    
@@ -25,7 +25,7 @@ In addition, a project may have an arbitrary disctionary with user-defined proje
 Data Dispatcher does not use project metadata in any way except passing it as is to the worker, when asked for the next file to process
 for the project.
 Therefore, project metadata can be any JSON dictionary. 
-There are no restrictions on the project metadata field names or complexity of the project metadata disctionary.
+There are no restrictions on the project metadata field names or complexity of the project metadata dictionary.
 
 Data Dispatcher provides a way to search projects by their attributes and metadata.
 
@@ -40,7 +40,7 @@ Project query is a logical combination of primitive operations expressed in term
 If metadata includes a field with the same name as a project attribute (e.g. "created" or "owner"), the query always uses the
 value of the named project attribute and not the metadata field.
 
-When the query is executed the combined logical expression is evaluated for each project and then those project, for which the
+When the query is executed the combined logical expression is evaluated for each project and then those projects, for which the
 expression is evaluated to ``true`` are returned as the query result.
 
 Expressions
@@ -103,14 +103,14 @@ The project query constant can be of one of the following data types:
     * Boolean values (``true``, ``false``)
     * ``null``
 
-String constants are enclosed in doble or single quotes. But "safe" string constants 
+String constants are enclosed in double or single quotes. But "safe" string constants 
 (string, which consist only of letters, digits and ``%$@_^.%*?-``) do not need to be enclosed in quotes.
 If possible an unquoted string will be interpreted as an integer or a floating point number.
 If you need such a string to remain a string, it needs to be enclosed in quotes.
 
 Unquoted strings ``null``, ``true`` and ``false`` are treated as null and boolean constants.
 
-The project creation datetime attribute `created` is a date-time field. To etner its value in the query, use string in the format:
+The project creation datetime attribute `created` is a date-time field. To enter its value in the query, use string in the format:
 
     .. code-block::
     
