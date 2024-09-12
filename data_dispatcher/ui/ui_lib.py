@@ -31,7 +31,7 @@ def print_handles(handles, print_replicas):
         "failed":       4
     }
     
-    table = Table("Status", "Replicas", "Attempts", "Worker", 
+    table = Table("Status", "Available", "Replicas", "Attempts", "Worker", 
             Column("File" + (" / RSE, avlbl, URL" if print_replicas else ""),
                 left=True)
     )
@@ -40,19 +40,25 @@ def print_handles(handles, print_replicas):
 
     for h in handles:
         #print("print_handles: handle:", h)
-        h["is_available"] = any(r["available"] and r.get("rse_available") for r in h["replicas"].values())
+        if h.get("replicas") is not None: 
+            h["is_available"] = any(r["available"] and r.get("rse_available") for r in h["replicas"].values())
+        else: 
+            h['is_available'] = False
 
     handles = sorted(handles, key=lambda h: (0 if h["is_available"] else 1, state_order[h["state"]], h["attempts"], h["namespace"], h["name"]))
 
     for f in handles:
-        rlist = f["replicas"].values()
-        available_replicas = len([r for r in rlist if r["available"] and r["rse_available"]])
-        nreplicas = len(rlist)
+        rlist = f.get('replicas')
+        available_replicas = 0 if rlist is None else len([r for r in rlist.values() if r["available"] and r["rse_available"]])
+        nreplicas = 0 if rlist is None else len(rlist)
         state = f["state"]
-        if state == "initial" and available_replicas:
-            state = "available"
+        if available_replicas > 0:
+            file_available = "yes"
+        else:
+            file_available = "no"
         table.add_row(
             state,
+            file_available,
             "%4d/%-4d" % (available_replicas, nreplicas),
             f["attempts"],
             f["worker_id"],
@@ -60,7 +66,7 @@ def print_handles(handles, print_replicas):
         )
         if print_replicas:
             for r in sorted(f["replicas"].values(), key=lambda r: r["preference"]):
-                table.add_row(None, None, None, None,
+                table.add_row(None, None, None, None, None,
                     " %-10s %-3s %s" % (r["rse"], 
                         "yes" if r["available"] else "no", r["url"] or ""
                     )
