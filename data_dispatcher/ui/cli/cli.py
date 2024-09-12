@@ -100,7 +100,7 @@ class CLICommand(CLIInterpreter):
             return self(command, context, opts, args)
         except (InvalidOptions, InvalidArguments):
             if usage_on_error:
-                cmd = "" if not command else f"for {command}"
+                cmd = "" if not command else f"{command}"
                 print(f"Invalid arguments or options for {cmd}\n", file=sys.stderr)
                 print(self.help(command), file=sys.stderr)
                 return
