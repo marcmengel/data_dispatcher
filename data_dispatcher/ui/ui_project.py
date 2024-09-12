@@ -254,11 +254,9 @@ class ShowCommand(CLICommand):
         -a                                              - show project attributes only
         -r                                              - show replicas information
         -j                                              - show as JSON
-        -f [active|ready|available|all|reserved|failed|done]    - list files (namespace:name) only
-               all       - all files, including done and failed
-               active    - all except done and failed
-               ready     - ready files only
-               available - available files only
+        -f [all|initial|reserved|failed|done]    - list files (namespace:name) only
+               all       - all files
+               initial   - initial files only
                reserved  - reserved files only
                failed    - failed files only
                done      - done files only
@@ -287,12 +285,13 @@ class ShowCommand(CLICommand):
                     did = h["namespace"] + ":" + h["name"]
                     state = h["state"]
                     rlist = h["replicas"].values()
-                    available = state == "ready" and len([r for r in rlist if r["available"] and r["rse_available"]]) > 0
-                    if filter_state == "all" or \
-                                filter_state in ("done", "ready", "failed", "reserved") and state == filter_state or \
-                                filter_state == "available" and available or \
-                                filter_state == "active" and not state in ("done", "failed"):
+                    if filter_state=="all":
                         print(did)
+                    elif filter_state==state:
+                        print(did)
+                    elif filter_state not in ["all", "initial", "reserved", "failed", "done"]:
+                        print("Invalid state")
+                        break
             else:
                 created_timestamp = datetime.utcfromtimestamp(info["created_timestamp"]).strftime("%Y/%m/%d %H:%M:%S UTC")
                 ended_timestamp = info.get("ended_timestamp") or ""
@@ -359,7 +358,7 @@ class SearchCommand(CLICommand):
     
     # Hidden for now
     
-    Opts = "ju:s:"
+    Opts = "ju:s:q"
     Usage = """[options] (-q (<query file>|-) |<search query>)            -- search projects
             -j                                          - JSON output
             -u <owner>                                  - filter by owner
