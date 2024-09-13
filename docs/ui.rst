@@ -313,11 +313,9 @@ Viewing projects
                 -a                                          - show project attributes only
                 -r                                          - show replicas information
                 -j                                          - show as JSON
-                -f [active|initial|available|all|reserved|failed|done]   - list files (namespace:name) only
-                   all       - all files, including done and failed
-                   active    - all except done and failed
-                   initial   - in initial state
-                   available - available files only
+                -f [all|initial|reserved|failed|done]    - list files (namespace:name) only
+                   all       - all files
+                   initial   - initial files only
                    reserved  - reserved files only
                    failed    - failed files only
                    done      - done files only
@@ -399,6 +397,48 @@ Deleting project
         $ ddisp project delete <project id>
 
 
+Files
+~~~~~
+
+The following commands are used to show information about the files in a project.
+
+Viewing files
+.............
+
+This command will show information about a file in a project, including the file state, worker id, number of attempts, and replica information.
+
+    .. code-block:: shell
+
+        $ ddisp file show [-j] <project_id> <file DID>
+                  -j                  -- JSON output
+
+
+Listing files
+.............
+
+This command will list all the files in a project, their status, attempts, associated workers, and replica information. They are shown to be available if they have an associated RSE.
+
+    .. code-block:: shell
+
+        $ ddisp file list [options] <project id>
+                  -j                  -- JSON output
+                  -s <handle state>   -- list handles in state
+                  -r <rse>            -- list handles with replicas in RSE
+
+File states
+...........
+
+There are four different states that a file can be in: initial, reserved, done, and failed.
+
+A file is in the *initial* state when it has been assigned to a project.
+
+A file is in the *reserved* state when it has been assigned a worker.
+
+A file is in the *done* state when the worker successfully processed the file.
+
+A file is in the *failed* state when the worker failed to process the file.
+
+
 Data Processing Workflow (worker side)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -435,7 +475,7 @@ Getting next file to process
 
     .. code-block:: shell
 
-       $ ddisp worker [options] <project_id> -- get next available file              
+       $ ddisp worker next [options] <project_id> -- get next available file              
              -w <worker id>     -- specify worker id
              -c <cpu site>      -- choose the file according to the CPU/RSE proximity map for the CPU site
              -j <json file>     -- write reserved file information into a JSON file

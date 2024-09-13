@@ -1163,14 +1163,6 @@ class DBFileHandle(DBObject, HasLogRecord):
     InitialState = ReadyState = "initial"
     ReservedState = "reserved"
     States = ["initial", "reserved", "done", "failed"]
-    DerivedStates = [
-            "available", 
-            "reserved",
-            "not found",
-            "found",
-            "done",
-            "failed"
-        ]
 
     LogIDColumns = ["project_id", "namespace", "name"]
     LogTable = "file_handle_log"
@@ -1212,27 +1204,10 @@ class DBFileHandle(DBObject, HasLogRecord):
         return self.Replicas
         
     def state(self):
-        # returns conbined handle state, including derived states like "available" and "found"
-        if self.State == "initial":
-            replicas = list(self.replicas().values())
-            if replicas:
-                if any(r.is_available() for r in replicas):
-                    return "available"
-                else:
-                    return "found"
-            else:
-                return "not found"
         return self.State
         
     def file_state(self):
-        replicas = list(self.replicas().values())
-        if replicas:
-            if any(r.is_available() for r in replicas):
-                return "available"
-            else:
-                return "found"
-        else:
-            return "not found"
+        return self.State
 
     def sorted_replicas(self):
         replicas = self.replicas().values()

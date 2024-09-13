@@ -4,28 +4,11 @@ from .cli import CLI, CLICommand, InvalidOptions, InvalidArguments
 
 class ShowCommand(CLICommand):
     
-    Opts = "jp:"
-    Usage = """[-j] [-p <project id>] <file DID>
+    Opts = "j:"
+    Usage = """[-j] <project_id> <file DID>
         -j                  -- JSON output
-        -p <project>        -- show file handle for the project
     """
-    MinArgs = 1
-
-    def show_file(self, client, did, opts):
-        namespace, name = from_did(did)
-        data = client.get_file(namespace, name)
-        if "-j" in opts:
-            print(pretty_json(data))
-        else:
-            replicas = data["replicas"].items()
-            replicas = sorted(replicas, key=lambda info: (not info[1].get("available"), info[0]))
-            print("Namespace: ", namespace)
-            print("Name:      ", name)
-            print("Replicas:  ", len(replicas))
-            for rse, info in replicas:
-                print("%1s %-25s %s" % ("A" if info["available"] else "U", rse, info.get("url") or ""))
-                if info.get("path"):
-                    print("%27s %s" % ("", info["path"]))
+    MinArgs = 2
 
     def show_handle(self, client, project_id, did, opts):
         namespace, name = from_did(did)
@@ -53,15 +36,12 @@ class ShowCommand(CLICommand):
                     print("  Available:  ", "yes" if r["available"] else "no")
 
     def __call__(self, command, client, opts, args):
-        did = args[0]
-        if "-p" in opts:
-            project_id = int(opts["-p"])
-            return self.show_project(client, project, did, opts)
-        else:
-            return self.show_file(client, did, opts)
+        did = args[1]
+        project_id = int(args[0])
+        return self.show_handle(client, project_id, did, opts)
 
 class ListHandlesCommand(CLICommand):
-    Opts = "r:s:"
+    Opts = "js:r:"
     Usage = """[options] <project id>
         -j                  -- JSON output
         -s <handle state>   -- list handles in state
@@ -71,11 +51,31 @@ class ListHandlesCommand(CLICommand):
 
     def __call__(self, command, client, opts, args):
         project_id = int(args[0])
-        lst = client.list_handles(project_id=project_id, rse=opts.get("-r"), state=opts.get("-s"), with_replicas=True)
-        if "-j" in opts:
-            print(pretty_json(lst))
+        proj = client.get_project(project_id, with_files=True, with_replicas=True)
+        lst = proj["file_handles"]
+        if "-s" in opts:
+            filter_state = opts["-s"]
+            filtered_state=[]
+            for h in lst:
+                state = h["state"]
+                if filter_state==state:
+                    filtered_state.append(h)
         else:
-            print_handles(lst)
+            filtered_state=lst
+
+        if "-r" in opts:
+            filter_rse = opts["-r"]
+            filtered_list=[]
+            for h in filtered_state:
+                if filter_rse in h['replicas']:
+                    filtered_list.append(h)
+        else:
+            filtered_list=filtered_state
+
+        if "-j" in opts:
+            print(pretty_json(filtered_list))
+        else:
+            print_handles(filtered_list, print_replicas=False)
 
 
 FileCLI = CLI(
