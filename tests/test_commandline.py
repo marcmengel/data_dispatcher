@@ -28,6 +28,7 @@ def test_ddisp_login_token(auth, token):
 def test_ddisp_project_create(auth):
     with os.popen(f"ddisp project create {test_proj} ", "r") as fin:
         data = fin.read().strip()
+
     assert type(int(data)) == int
     return data
 
@@ -64,6 +65,7 @@ def test_ddisp_project_list(auth):
     assert data.find("Created") > 0
     assert data.find("State") > 0
 
+
 # needs to be fixed
 #def test_ddisp_project_search(auth, test_ddisp_project_create):
 #    with os.popen("ddisp project search -s active", "r") as fin:
@@ -92,6 +94,7 @@ def test_ddisp_project_cancel(auth, test_ddisp_project_copy):
 #    with os.popen(f"ddisp project show {proj_id} ", "r") as fin:
 #        data = fin.read()
 #    assert data.find("active") > 0
+
 
 def test_ddisp_file_show(auth, test_ddisp_project_create):
     with os.popen(f"ddisp file show {test_ddisp_project_create} mengel:a.fcl ", "r") as fin:
