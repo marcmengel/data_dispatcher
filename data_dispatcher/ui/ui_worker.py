@@ -1,11 +1,11 @@
-import sys, time, json
-from .ui_lib import to_did, from_did, pretty_json, print_handles
+import sys, time
+from .ui_lib import to_did, from_did, pretty_json
 from .cli import CLI, CLICommand, InvalidOptions, InvalidArguments
 from data_dispatcher.api import NotFoundError
 
 class NextFileCommand(CLICommand):
     
-    Opts = "j:t:c:w:"
+    Opts = "jt:c:w:"
     MinArgs = 1
     Usage = """[options] <project_id> -- get next available file
              -w <worker id>     -- specify worker id
@@ -34,7 +34,7 @@ class NextFileCommand(CLICommand):
             if json_out:
                 reply["replicas"] = sorted(reply["replicas"].values(), key=lambda r: 1000000 if r.get("preference") is None else r["preference"])
                 with open(json_out, "w") as jo:
-                    json.dump(reply, jo, indent=4, sort_keys=True)
+                    json.dump(reply, jo)
         else:
             print("timeout" if reply else "done")
             sys.exit(1)        # timeout
@@ -50,7 +50,7 @@ class DoneCommand(CLICommand):
     def __call__(self, command, client, opts, args):
         project_id, did = args
         if did == "all":
-            dids = [to_did(h["namespace"], h["name"]) for h in client.reserved_files(project_id)]
+            dids = [to_did(h["namespace"], h["name"]) for h in client.reserved_handles(project_id)]
         else:
             dids = [did]
         for did in dids:
@@ -68,7 +68,7 @@ class FailedCommand(CLICommand):
     def __call__(self, command, client, opts, args):
         project_id, did = args
         if did == "all":
-            dids = [to_did(h["namespace"], h["name"]) for h in client.reserved_files(project_id)]
+            dids = [to_did(h["namespace"], h["name"]) for h in client.reserved_handles(project_id)]
         else:
             dids = [did]
         for did in dids:
@@ -99,7 +99,7 @@ class IDCommand(CLICommand):
 class ListReservedCommand(CLICommand):
     
     MinArgs = 1
-    Opts = "j"
+    Opts = "jw:"
     Usage = """[-j] [-w <worker id>] <project id>              -- list files allocated to the worker
         -j                      -- as JSON
         -w <worker id>          -- specify worker id. Otherwise, use my worker id    
@@ -110,7 +110,7 @@ class ListReservedCommand(CLICommand):
         worker_id = opts.get("-w", client.WorkerID)
         as_json = "-j" in opts
         
-        try:    handles = client.reserved_files(project_id, worker_id)
+        try:    handles = client.reserved_handles(project_id, worker_id)
         except NotFoundError:
             print("project not found", file=sys.stderr)
             sys.exit(1)
@@ -119,7 +119,9 @@ class ListReservedCommand(CLICommand):
             print(pretty_json(handles))
         else:
             for h in handles:
-                print(h["namespace"] + ':' + h["name"])
+                for name, val in h.items():
+                    print(f"{name:10s}: {val}")
+                
 
 
 WorkerCLI = CLI(
