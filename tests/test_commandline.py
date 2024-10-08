@@ -25,14 +25,17 @@ def test_ddisp_login_token(auth, token):
         assert data.find("Expires") >= 0
 
 @pytest.fixture(scope='session')
-def test_ddisp_project_create(auth):
+def proj_id(auth):
     with os.popen(f"ddisp project create {test_proj} ", "r") as fin:
         data = fin.read().strip()
-    assert type(int(data)) == int
     return data
 
-def test_ddisp_project_show(auth, test_ddisp_project_create):
-    with os.popen(f"ddisp project show {test_ddisp_project_create}", "r") as fin:
+def test_ddisp_project_create(auth, proj_id):
+    assert len(proj_id) > 0
+    assert type(int(proj_id)) == int
+
+def test_ddisp_project_show(auth, proj_id):
+    with os.popen(f"ddisp project show {proj_id}", "r") as fin:
         data = fin.read()
     assert data.find("Owner") > 0
     assert data.find("Status") > 0
@@ -45,182 +48,184 @@ def test_ddisp_project_list(auth):
     assert data.find("Created") > 0
     assert data.find("State") > 0
 
-def test_ddisp_file_show(auth, test_ddisp_project_create):
-    with os.popen(f"ddisp file show {test_ddisp_project_create} mengel:a.fcl ", "r") as fin:
+def test_ddisp_file_show(auth, proj_id):
+    with os.popen(f"ddisp file show {proj_id} mengel:a.fcl ", "r") as fin:
         data = fin.read()
-    assert data.find(f"{test_ddisp_project_create}") > 0
+    assert data.find(f"{proj_id}") > 0
     assert data.find("namespace") > 0
     assert data.find("state") > 0
 
-def test_ddisp_file_list(auth, test_ddisp_project_create):
-    with os.popen(f"ddisp file list {test_ddisp_project_create} ", "r") as fin:
+def test_ddisp_file_list(auth, proj_id):
+    with os.popen(f"ddisp file list {proj_id} ", "r") as fin:
         data = fin.read()
     assert data.find("Status") > 0
     assert data.find("Replicas") > 0
     assert data.find("File") > 0
 
-def test_ddisp_file_list_rse(auth, test_ddisp_project_create):
-    with os.popen(f"ddisp file list -r FNAL_DCACHE_DISK_TEST {test_ddisp_project_create} ", "r") as fin:
+def test_ddisp_file_list_rse(auth, proj_id):
+    with os.popen(f"ddisp file list -r FNAL_DCACHE_DISK_TEST {proj_id} ", "r") as fin:
         data = fin.read()
     assert data.find("mengel:a.fcl") > 0
-    with os.popen(f"ddisp file list -r TEST {test_ddisp_project_create} ", "r") as fin:
+    with os.popen(f"ddisp file list -r TEST {proj_id} ", "r") as fin:
         data = fin.read()
     assert data.find("mengel:a.fcl") < 0
 
 @pytest.fixture(scope='session')
-def test_ddisp_worker_next(auth, test_ddisp_project_create):
-    with os.popen(f"ddisp worker next {test_ddisp_project_create} ", "r") as fin:
+def next_file(auth, proj_id):
+    with os.popen(f"ddisp worker next {proj_id} ", "r") as fin:
         did = fin.read()
-    assert len(did) > 0
     return did
+
+def test_ddisp_worker_next(auth, next_file):
+    assert len(next_file) > 0
 
 def test_ddisp_worker_id(auth):
     with os.popen("ddisp worker id", "r") as fin:
         data = fin.read()
     assert len(data) > 0
 
-def test_ddisp_worker_list(auth, test_ddisp_project_create):
-    with os.popen(f"ddisp worker list {test_ddisp_project_create} ", "r") as fin:
+def test_ddisp_worker_list(auth, proj_id):
+    with os.popen(f"ddisp worker list {proj_id} ", "r") as fin:
         data = fin.read()
-    print(data)
-    print(f"ddisp worker list {test_ddisp_project_create} ")
     assert data.find("project_id") >= 0
     assert data.find("worker_id") >= 0
     assert data.find("namespace") >= 0
 
-def test_ddisp_worker_list_w(auth, test_ddisp_project_create):
+def test_ddisp_worker_list_w(auth, proj_id):
     with os.popen("ddisp worker id", "r") as fin:
         wid = fin.read().strip()
-    with os.popen(f"ddisp worker list -w {wid} {test_ddisp_project_create} ", "r") as fin:
+    with os.popen(f"ddisp worker list -w {wid} {proj_id} ", "r") as fin:
         data = fin.read()
     assert data.find("namespace") >= 0
     assert data.find("project_id") >= 0
     assert data.find("worker_id") >= 0
 
-def test_ddisp_project_show_state(auth, test_ddisp_project_create):
-    with os.popen(f"ddisp project show -f initial {test_ddisp_project_create}", "r") as fin:
+def test_ddisp_project_show_state(auth, proj_id):
+    with os.popen(f"ddisp project show -f initial {proj_id}", "r") as fin:
         data = fin.read()
     assert data.find(".fcl") >= 0
-    with os.popen(f"ddisp project show -f done {test_ddisp_project_create}", "r") as fin:
+    with os.popen(f"ddisp project show -f done {proj_id}", "r") as fin:
         data = fin.read()
     assert len(data) == 0
-    with os.popen(f"ddisp project show -f test {test_ddisp_project_create}", "r") as fin:
+    with os.popen(f"ddisp project show -f test {proj_id}", "r") as fin:
         data = fin.read()
     assert data.find("Invalid state") >= 0
 
 # needs to be fixed
-#def test_ddisp_project_search(auth, test_ddisp_project_create):
+#def test_ddisp_project_search(auth, proj_id):
 #    with os.popen("ddisp project search -s active", "r") as fin:
 #        data = fin.read()
-#    assert data.find(str(test_ddisp_project_create)) > 0
+#    assert data.find(str(proj_id)) > 0
 #    assert data.find(os.environ["USER"]) > 0
 
-def test_ddisp_worker_done(auth, test_ddisp_project_create, test_ddisp_worker_next):
-    with os.popen(f"ddisp worker done {test_ddisp_project_create} {test_ddisp_worker_next} ", "r") as fin:
+def test_ddisp_worker_done(auth, proj_id, next_file):
+    with os.popen(f"ddisp worker done {proj_id} {next_file} ", "r") as fin:
         data = fin.read()
     assert len(data) == 0
-    with os.popen(f"ddisp file show {test_ddisp_project_create} {test_ddisp_worker_next} ", "r") as fin:
+    with os.popen(f"ddisp file show {proj_id} {next_file} ", "r") as fin:
         data = fin.read()
     assert data.find("done") > 0
 
-def test_ddisp_file_list_state(auth, test_ddisp_project_create):
-    with os.popen(f"ddisp file list -s initial {test_ddisp_project_create} ", "r") as fin:
+def test_ddisp_file_list_state(auth, proj_id):
+    with os.popen(f"ddisp file list -s initial {proj_id} ", "r") as fin:
         data = fin.read()
     assert data.find("initial") > 0
-    with os.popen(f"ddisp file list -s done {test_ddisp_project_create} ", "r") as fin:
+    with os.popen(f"ddisp file list -s done {proj_id} ", "r") as fin:
         data = fin.read()
     assert data.find("done") > 0
     assert data.find("initial") < 0
 
-def test_ddisp_worker_failed(auth, test_ddisp_project_create):
+def test_ddisp_worker_failed(auth, proj_id):
     # failing once causes the file to go back to the initial state to be retried
-    with os.popen(f"ddisp worker next {test_ddisp_project_create} ", "r") as fin:
+    with os.popen(f"ddisp worker next {proj_id} ", "r") as fin:
         did = fin.read()
-    with os.popen(f"ddisp worker failed {test_ddisp_project_create} {did}", "r") as fin:
+    with os.popen(f"ddisp worker failed {proj_id} {did}", "r") as fin:
         data = fin.read()
     assert len(data) == 0
-    with os.popen(f"ddisp file show {test_ddisp_project_create} {did}", "r") as fin:
+    with os.popen(f"ddisp file show {proj_id} {did}", "r") as fin:
         data = fin.read()
     assert data.find("initial") > 0
 
     # this time mark the file as permanently failed with the -f option
-    with os.popen(f"ddisp worker next {test_ddisp_project_create} ", "r") as fin:
+    with os.popen(f"ddisp worker next {proj_id} ", "r") as fin:
         did = fin.read()
-    with os.popen(f"ddisp worker failed -f {test_ddisp_project_create} {did} ", "r") as fin:
+    with os.popen(f"ddisp worker failed -f {proj_id} {did} ", "r") as fin:
         data = fin.read()
     assert len(data) == 0
-    with os.popen(f"ddisp file show {test_ddisp_project_create} {did} ", "r") as fin:
+    with os.popen(f"ddisp file show {proj_id} {did} ", "r") as fin:
         data = fin.read()
     assert data.find("failed") > 0
 
-def test_ddisp_worker_failed_all(auth, test_ddisp_project_create):
-    with os.popen(f"ddisp project show -f initial {test_ddisp_project_create}", "r") as fin:
+def test_ddisp_worker_failed_all(auth, proj_id):
+    with os.popen(f"ddisp project show -f initial {proj_id}", "r") as fin:
         dids = fin.read()
 
     dids = dids.split('\n')
     dids = dids[:-1]
 
     for did in dids:
-        os.system(f"ddisp worker next {test_ddisp_project_create}")
+        os.system(f"ddisp worker next {proj_id}")
 
-    with os.popen(f"ddisp worker failed -f {test_ddisp_project_create} all", "r") as fin:
+    with os.popen(f"ddisp worker failed -f {proj_id} all", "r") as fin:
         data = fin.read()
         assert len(data) == 0
 
-    with os.popen(f"ddisp file list {test_ddisp_project_create}", "r") as fin:
+    with os.popen(f"ddisp file list {proj_id}", "r") as fin:
         data = fin.read()
         assert data.find("initial") < 0
         assert data.find("failed") > 0
 
-def test_ddisp_project_restart(auth, test_ddisp_project_create):
-    with os.popen(f"ddisp project restart -a {test_ddisp_project_create}", "r") as fin:
+def test_ddisp_project_restart(auth, proj_id):
+    with os.popen(f"ddisp project restart -a {proj_id}", "r") as fin:
         data = fin.read()
         assert len(data) == 0
-    with os.popen(f"ddisp file list {test_ddisp_project_create}", "r") as fin:
+    with os.popen(f"ddisp file list {proj_id}", "r") as fin:
         data = fin.read()
         assert data.find("initial") > 0
         assert data.find("failed") < 0
 
-def test_ddisp_worker_done_all(auth, test_ddisp_project_create):
-    with os.popen(f"ddisp project show -f initial {test_ddisp_project_create}", "r") as fin:
+def test_ddisp_worker_done_all(auth, proj_id):
+    with os.popen(f"ddisp project show -f initial {proj_id}", "r") as fin:
         dids = fin.read()
     dids = dids.split('\n')
     dids = dids[:-1]
     for did in dids:
-        os.system(f"ddisp worker next {test_ddisp_project_create}")
-    with os.popen(f"ddisp worker done {test_ddisp_project_create} all", "r") as fin:
+        os.system(f"ddisp worker next {proj_id}")
+    with os.popen(f"ddisp worker done {proj_id} all", "r") as fin:
         data = fin.read()
         assert len(data) ==0
-    with os.popen(f"ddisp file list {test_ddisp_project_create}", "r") as fin:
+    with os.popen(f"ddisp file list {proj_id}", "r") as fin:
         data = fin.read()
         assert data.find("done") > 0
         assert data.find("initial") < 0
         assert data.find("failed") < 0
 
 @pytest.fixture(scope='session')
-def test_ddisp_project_copy(auth, test_ddisp_project_create):
-    with os.popen(f"ddisp project copy {test_ddisp_project_create} ", "r") as fin:
-        data = fin.read()
-        assert type(int(data)) == int
-        assert data != test_ddisp_project_create
+def proj_id_copy(auth, proj_id):
+    with os.popen(f"ddisp project copy {proj_id} ", "r") as fin:
+        data = fin.read().strip()
     return data
 
+def test_ddisp_project_copy(auth, proj_id, proj_id_copy):
+    assert proj_id_copy != proj_id
+    assert type(int(proj_id_copy)) == int
+
 #def test_ddisp_project_activate():
-#    os.system(f"ddisp project activate {proj_id} ")
-#    with os.popen(f"ddisp project show {proj_id} ", "r") as fin:
+#    os.system(f"ddisp project activate {proj_id_copy} ")
+#    with os.popen(f"ddisp project show {proj_id_copy} ", "r") as fin:
 #        data = fin.read()
 #    assert data.find("active") > 0
 
-def test_ddisp_project_cancel(auth, test_ddisp_project_copy):
-    os.system(f"ddisp project cancel {test_ddisp_project_copy} ")
-    with os.popen(f"ddisp project show {test_ddisp_project_copy} ", "r") as fin:
+def test_ddisp_project_cancel(auth, proj_id_copy):
+    os.system(f"ddisp project cancel {proj_id_copy} ")
+    with os.popen(f"ddisp project show {proj_id_copy} ", "r") as fin:
         data = fin.read()
 #        print(data.find("cancelled"))
     assert data.find("cancelled") > 0
 
 # needs to be fixed
-#def test_ddisp_project_delete(auth, test_ddisp_project_copy):
-#    with os.popen(f"ddisp project delete {test_ddisp_project_copy} ", "r") as fin:
+#def test_ddisp_project_delete(auth, proj_id_copy):
+#    with os.popen(f"ddisp project delete {proj_id_copy} ", "r") as fin:
 #        data = fin.read()
 #    assert
 
