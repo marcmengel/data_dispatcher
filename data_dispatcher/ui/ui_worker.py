@@ -1,11 +1,11 @@
 import sys, time, json
-from .ui_lib import to_did, from_did, pretty_json, print_handles
+from .ui_lib import to_did, from_did, pretty_json
 from .cli import CLI, CLICommand, InvalidOptions, InvalidArguments
 from data_dispatcher.api import NotFoundError
 
 class NextFileCommand(CLICommand):
     
-    Opts = "j:t:c:w:"
+    Opts = "jt:c:w:"
     MinArgs = 1
     Usage = """[options] <project_id> -- get next available file
              -w <worker id>     -- specify worker id
@@ -50,7 +50,7 @@ class DoneCommand(CLICommand):
     def __call__(self, command, client, opts, args):
         project_id, did = args
         if did == "all":
-            dids = [to_did(h["namespace"], h["name"]) for h in client.reserved_files(project_id)]
+            dids = [to_did(h["namespace"], h["name"]) for h in client.reserved_handles(project_id)]
         else:
             dids = [did]
         for did in dids:
@@ -68,7 +68,7 @@ class FailedCommand(CLICommand):
     def __call__(self, command, client, opts, args):
         project_id, did = args
         if did == "all":
-            dids = [to_did(h["namespace"], h["name"]) for h in client.reserved_files(project_id)]
+            dids = [to_did(h["namespace"], h["name"]) for h in client.reserved_handles(project_id)]
         else:
             dids = [did]
         for did in dids:
@@ -99,7 +99,7 @@ class IDCommand(CLICommand):
 class ListReservedCommand(CLICommand):
     
     MinArgs = 1
-    Opts = "j"
+    Opts = "jw:"
     Usage = """[-j] [-w <worker id>] <project id>              -- list files allocated to the worker
         -j                      -- as JSON
         -w <worker id>          -- specify worker id. Otherwise, use my worker id    
@@ -110,7 +110,7 @@ class ListReservedCommand(CLICommand):
         worker_id = opts.get("-w", client.WorkerID)
         as_json = "-j" in opts
         
-        try:    handles = client.reserved_files(project_id, worker_id)
+        try:    handles = client.reserved_handles(project_id, worker_id)
         except NotFoundError:
             print("project not found", file=sys.stderr)
             sys.exit(1)
