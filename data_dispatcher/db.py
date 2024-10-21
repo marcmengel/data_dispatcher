@@ -54,6 +54,7 @@ def sanitize(s):
     s = str(s)
     if "'" in s:
         raise ValueError('Invalid value: "%s"' % (s,))
+    return s
 
 class DBObject(HasDB):
     
