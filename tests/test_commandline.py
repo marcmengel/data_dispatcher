@@ -48,6 +48,18 @@ def test_ddisp_project_list(auth):
     assert data.find("Created") > 0
     assert data.find("State") > 0
 
+def test_ddisp_project_list_options(auth):
+    with os.popen("ddisp project list -s failed") as fin:
+        data = fin.read()
+    assert data.find("failed") >= 0
+    assert data.find("active") < 0
+    assert data.find("abandoned") < 0
+    with os.popen("ddisp project list -s all -n cancelled") as fin:
+        data = fin.read()
+    assert data.find("active") >= 0
+    assert data.find("abandoned") >= 0
+    assert data.find("cancelled") < 0
+
 def test_ddisp_file_show(auth, proj_id):
     with os.popen(f"ddisp file show {proj_id} mengel:a.fcl ", "r") as fin:
         data = fin.read()

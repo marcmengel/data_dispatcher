@@ -318,21 +318,46 @@ class ShowCommand(CLICommand):
                     print_handles(info["file_handles"], print_replicas)
 
 class ListCommand(CLICommand):
-    Opts = "ju:s:a:"
+    Opts = "ju:s:n:a:"
     Usage = """[options]                            -- list projects
             -j                                          - JSON output
-            -u <owner>                                  - filter by owner
+            -u <owner>                                  - filter by owner, default: current user only
+                all         - list projects from all users
+                username    - list projects from username            
             -s <state>                                  - filter by state, default: active projects only
+                all        - all projects
+                active     - active projects only
+                done       - projects that are marked done
+                failed     - projects that are marked failed
+                cancelled  - projects that have been cancelled
+                abandoned  - projects that have timed out
+            -n <not_state>                              - filter out by state, default: abandoned projects
             -a "name=value name=value ..."              - filter by attributes
     """
 
     def __call__(self, command, client, opts, args):
         state = opts.get("-s", "active")
+        not_state = opts.get("-n")
+
+        # default to not list abandoned projects unless specifically asked
+        if state == "abandoned" or state == "all" and not_state is None:
+            not_state = None
+        elif state != "abandoned" and not_state is None:
+            not_state = "abandoned"
+
         attributes = None
         if "-a" in opts:
             attributes = parse_attrs(opts["-a"])
         owner = opts.get("-u")
-        lst = client.list_projects(state=state, attributes=attributes, owner=owner, with_files=True, with_replicas=False)
+
+        if state == "all":
+            states = ["active", "failed", "done", "cancelled", "abandoned"]
+            lst = []
+            for s in states:
+                lst = lst + client.list_projects(state=s, not_state=not_state, attributes=attributes, owner=owner, with_files=True, with_replicas=False)
+        else:
+            lst = client.list_projects(state=state, not_state=not_state, attributes=attributes, owner=owner, with_files=True, with_replicas=False)
+
         if "-j" in opts:
             print(pretty_json(list(lst)))
         else:

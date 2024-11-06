@@ -352,8 +352,20 @@ class Handler(BaseHandler):
         project_log = (x.as_jsonable() for x in project.handles_log())
         return json.dumps(project_log), "text/json"
 
-    def projects(self, request, relpath, state=None, not_state="abandoned", owner=None, attributes="",
+    def projects(self, request, relpath, state=None, not_state=None, owner=None, attributes="",
                 with_handles="yes", with_replicas="yes", **args):
+        # default to only show projects owned by the current user
+        user, error = self.authenticated_user()
+        if user is None:
+            return 401, error
+        
+        if owner is None:
+            owner = user.Username
+        elif owner == "all":
+            owner = None
+        else:
+            owner = owner
+
         with_handles = with_handles == "yes"
         with_replicas = with_replicas == "yes"
         attributes = urllib.parse.unquote(attributes)
