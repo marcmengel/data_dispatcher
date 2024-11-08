@@ -178,9 +178,10 @@ class Handler(BaseHandler):
         #print(specs.get("files"))
         db = self.App.db()
         original_project = DBProject.get(db, project_id)
-        worker_timeout = specs.get("worker_timeout", original_project.WorkerTimeout)
         if original_project is None:
             return 404, "Project not found"
+        worker_timeout = specs.get("worker_timeout", original_project.WorkerTimeout)
+        idle_timeout = specs.get("idle_timeout", original_project.IdleTimeout)
         files_updated = []
         for h in original_project.handles():
             attrs = h.Attributes.copy()
@@ -192,7 +193,7 @@ class Handler(BaseHandler):
             ))
         project_attrs = original_project.Attributes.copy()
         project_attrs.update(project_attributes)
-        project = DBProject.create(db, user.Username, attributes=project_attrs, query=original_project.Query, worker_timeout=worker_timeout)
+        project = DBProject.create(db, user.Username, attributes=project_attrs, query=original_project.Query, worker_timeout=worker_timeout, idle_timeout=idle_timeout)
         project.add_files(files_updated)
         project.add_log("event", event="copied", source=project_id, override=dict(
             project=project_attrs, file=file_attributes

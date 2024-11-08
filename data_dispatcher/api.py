@@ -189,7 +189,7 @@ class DataDispatcherClient(HTTPClient, TokenAuthClientMixin):
             )
         )
         
-    def copy_project(self, project_id, common_attributes={}, project_attributes={}, worker_timeout=None):
+    def copy_project(self, project_id, common_attributes={}, project_attributes={}, worker_timeout=None, idle_timeout=None):
         """Creates new project
         
         Args:
@@ -208,7 +208,8 @@ class DataDispatcherClient(HTTPClient, TokenAuthClientMixin):
                     "project_id":           project_id,
                     "file_attributes":      common_attributes,
                     "project_attributes":   project_attributes,
-                    "worker_timeout":       worker_timeout
+                    "worker_timeout":       worker_timeout,
+                    "idle_timeout":         idle_timeout
                 }
             )
         )

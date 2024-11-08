@@ -16,7 +16,7 @@ class CreateCommand(CLICommand):
         -j (-|<JSON file with file list>)               - read JSON file with file list {"namespace":...,"name"..., "attributes":{...}}
 
         -w (<worker timeout>[s|m|h|d] | none)           - worker timeout in seconds (minutes, hours, days), default: 12 hours
-        -t (<idle timeout>[s|m|h|d] | none)             - worker timeout in seconds (minutes, hours, days), default: 72 hours
+        -t (<idle timeout>[s|m|h|d] | none)             - idle timeout in seconds (minutes, hours, days), default: 72 hours
 
         -q <file with MQL query>                        - read MQL query from file instead
         -c <name>[,<name>...]                           - copy metadata attributes from the query results, 
@@ -149,7 +149,7 @@ class CreateCommand(CLICommand):
 
 class CopyCommand(CLICommand):
     MinArgs = 1
-    Opts = "A:a:t:p:"
+    Opts = "A:a:w:t:p:"
     Usage = """[options] <project id>               -- copy project
 
         -A @<file.json>                                 - JSON file with project attributes to override
@@ -157,7 +157,8 @@ class CopyCommand(CLICommand):
         -a @<file.json>                                 - JSON file with file attributes to override
         -a "name=value name=value ..."                  - file attributes to override
 
-        -t <worker timeout>|none                        - worker timeout to override
+        -w (<worker timeout>[s|m|h|d] | none)           - worker timeout to override
+        -t (<idle timeout>[s|m|h|d] | none)             - idle timeout to override
 
         -p (json|pprint|id)                             - print created project info as JSON, 
                                                           pprint or just project id (default)
@@ -165,7 +166,14 @@ class CopyCommand(CLICommand):
     
     def __call__(self, command, client, opts, args):
         project_id = int(args[0])
-        
+        # get timeout defaults from the original project
+        proj_orig = client.get_project(project_id, with_files=False, with_replicas=False)
+        if proj_orig is not None:
+            worker_timeout_orig = proj_orig.get("worker_timeout")
+            idle_timeout_orig = proj_orig.get("idle_timeout")
+        else:
+            print("Project not found")
+
         common_attrs = {}
         if "-a" in opts:
             attr_src = opts["-a"]
@@ -182,14 +190,32 @@ class CopyCommand(CLICommand):
             else:
                 project_attrs = parse_attrs(attr_src)
 
-        worker_timeout = opts.get("-t")
-        if worker_timeout == "none":    
+        worker_timeout = opts.get("-w")
+        if worker_timeout is None and worker_timeout_orig is not None:
+            worker_timeout = worker_timeout_orig
+        elif worker_timeout == "none" or worker_timeout == "None":
             worker_timeout = None
-        if worker_timeout is not None:
-            worker_timeout = float(worker_timeout)
+        elif worker_timeout is not None:
+            mult = 1
+            if worker_timeout[-1].lower() in "smhd":
+                worker_timeout, unit = worker_timeout[:-1], worker_timeout[-1].lower()
+                mult = {'s':1, 'm':60, 'h':3600, 'd':24*3600}[unit]
+            worker_timeout = float(worker_timeout)*mult
+
+        idle_timeout = opts.get("-t")
+        if idle_timeout is None and idle_timeout_orig is not None:
+            idle_timeout = idle_timeout_orig
+        elif idle_timeout == "none" or idle_timeout == "None":
+            idle_timeout = None
+        elif idle_timeout is not None:
+            mult = 1
+            if idle_timeout[-1].lower() in "smhd":
+                idle_timeout, unit = idle_timeout[:-1], idle_timeout[-1].lower()
+                mult = {'s':1, 'm':60, 'h':3600, 'd':24*3600}[unit]
+            idle_timeout = float(idle_timeout)*mult
 
         #print("files:", files)
-        info = client.copy_project(project_id, common_attributes=common_attrs, project_attributes=project_attrs, worker_timeout=worker_timeout)
+        info = client.copy_project(project_id, common_attributes=common_attrs, project_attributes=project_attrs, worker_timeout=worker_timeout, idle_timeout=idle_timeout)
         printout = opts.get("-p", "id")
         if printout == "json":
             print(pretty_json(info))
