@@ -180,8 +180,22 @@ class Handler(BaseHandler):
         original_project = DBProject.get(db, project_id)
         if original_project is None:
             return 404, "Project not found"
+
         worker_timeout = specs.get("worker_timeout", original_project.WorkerTimeout)
         idle_timeout = specs.get("idle_timeout", original_project.IdleTimeout)
+        if type(worker_timeout) == float:
+            worker_timeout = worker_timeout
+        elif worker_timeout == "no timeout":
+            worker_timeout = None
+        elif worker_timeout == "default" or worker_timeout == None:
+            worker_timeout = original_project.WorkerTimeout
+        if type(idle_timeout) == float:
+            idle_timeout = idle_timeout
+        elif idle_timeout == "no timeout":
+            idle_timeout = None
+        elif idle_timeout == "default" or idle_timeout == None:
+            idle_timeout = original_project.IdleTimeout
+
         files_updated = []
         for h in original_project.handles():
             attrs = h.Attributes.copy()

@@ -203,6 +203,28 @@ class DataDispatcherClient(HTTPClient, TokenAuthClientMixin):
         Returns:
             (dict) new project information
         """
+        if worker_timeout == "none" or worker_timeout == "None" or worker_timeout == "no timeout":
+            worker_timeout = "no timeout"
+        elif worker_timeout == None or worker_timeout == "default":
+            worker_timeout = "default"
+        elif worker_timeout is not None:
+            mult = 1
+            if worker_timeout[-1].lower() in "smhd":
+                worker_timeout, unit = worker_timeout[:-1], worker_timeout[-1].lower()
+                mult = {'s':1, 'm':60, 'h':3600, 'd':24*3600}[unit]
+            worker_timeout = float(worker_timeout)*mult
+
+        if idle_timeout == "none" or idle_timeout == "None" or idle_timeout == "no timeout":
+            idle_timeout = "no timeout"
+        elif idle_timeout == None or idle_timeout == "default":
+            idle_timeout = "default"
+        elif idle_timeout is not None:
+            mult = 1
+            if idle_timeout[-1].lower() in "smhd":
+                idle_timeout, unit = idle_timeout[:-1], idle_timeout[-1].lower()
+                mult = {'s':1, 'm':60, 'h':3600, 'd':24*3600}[unit]
+            idle_timeout = float(idle_timeout)*mult
+
         return self.post("copy_project", json.dumps(
                 {   
                     "project_id":           project_id,

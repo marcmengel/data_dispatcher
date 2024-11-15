@@ -1,5 +1,6 @@
 import pytest
 import os
+import time
 
 from env import env, token, auth
 
@@ -26,7 +27,7 @@ def test_ddisp_login_token(auth, token):
 
 @pytest.fixture(scope='session')
 def proj_id(auth):
-    with os.popen(f"ddisp project create {test_proj} ", "r") as fin:
+    with os.popen(f"ddisp project create -t 60 {test_proj} ", "r") as fin:
         data = fin.read().strip()
     return data
 
@@ -222,24 +223,42 @@ def test_ddisp_project_copy(auth, proj_id, proj_id_copy):
     assert proj_id_copy != proj_id
     assert type(int(proj_id_copy)) == int
 
-#def test_ddisp_project_activate():
-#    os.system(f"ddisp project activate {proj_id_copy} ")
-#    with os.popen(f"ddisp project show {proj_id_copy} ", "r") as fin:
-#        data = fin.read()
-#    assert data.find("active") > 0
+def test_ddisp_project_copy_default_timeouts(auth, proj_id_copy):
+    # check that the copied project has the same timeouts as the original project
+    with os.popen(f"ddisp project show {proj_id_copy}", "r") as fin:
+        data = fin.read()
+    assert data.find("60.0") >= 0
+    assert data.find("43200.0") >= 0
+
+def test_ddisp_project_idle_timeout(auth, proj_id_copy):
+    # check that the project is active at first
+    with os.popen(f"ddisp project show {proj_id_copy} ", "r") as fin:
+        data = fin.read()
+    assert data.find("active") >= 0
+    # check that the project is marked abandoned after timeout
+    time.sleep(90)
+    with os.popen(f"ddisp project show {proj_id_copy} ", "r") as fin:
+        data = fin.read()
+    assert data.find("abandoned") >= 0
+
+def test_ddisp_project_activate(auth, proj_id_copy):
+    os.system(f"ddisp project activate {proj_id_copy} ")
+    with os.popen(f"ddisp project show {proj_id_copy} ", "r") as fin:
+        data = fin.read()
+    assert data.find("active") >= 0
+
 
 def test_ddisp_project_cancel(auth, proj_id_copy):
     os.system(f"ddisp project cancel {proj_id_copy} ")
     with os.popen(f"ddisp project show {proj_id_copy} ", "r") as fin:
         data = fin.read()
-#        print(data.find("cancelled"))
     assert data.find("cancelled") > 0
 
-# needs to be fixed
-#def test_ddisp_project_delete(auth, proj_id_copy):
-#    with os.popen(f"ddisp project delete {proj_id_copy} ", "r") as fin:
-#        data = fin.read()
-#    assert
+def test_ddisp_project_delete(auth, proj_id_copy):
+    os.system(f"ddisp project delete {proj_id_copy} ")
+    with os.popen(f"ddisp project show {proj_id_copy} ", "r") as fin:
+        data = fin.read()
+    assert data.find("not found") >= 0
 
 def test_ddisp_rse_list(auth):
     with os.popen("ddisp rse list", "r") as fin:

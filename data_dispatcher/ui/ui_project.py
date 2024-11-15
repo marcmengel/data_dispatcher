@@ -166,13 +166,6 @@ class CopyCommand(CLICommand):
     
     def __call__(self, command, client, opts, args):
         project_id = int(args[0])
-        # get timeout defaults from the original project
-        proj_orig = client.get_project(project_id, with_files=False, with_replicas=False)
-        if proj_orig is not None:
-            worker_timeout_orig = proj_orig.get("worker_timeout")
-            idle_timeout_orig = proj_orig.get("idle_timeout")
-        else:
-            print("Project not found")
 
         common_attrs = {}
         if "-a" in opts:
@@ -191,10 +184,10 @@ class CopyCommand(CLICommand):
                 project_attrs = parse_attrs(attr_src)
 
         worker_timeout = opts.get("-w")
-        if worker_timeout is None and worker_timeout_orig is not None:
-            worker_timeout = worker_timeout_orig
+        if worker_timeout is None:
+            worker_timeout = "default"
         elif worker_timeout == "none" or worker_timeout == "None":
-            worker_timeout = None
+            worker_timeout = "no timeout"
         elif worker_timeout is not None:
             mult = 1
             if worker_timeout[-1].lower() in "smhd":
@@ -203,10 +196,10 @@ class CopyCommand(CLICommand):
             worker_timeout = float(worker_timeout)*mult
 
         idle_timeout = opts.get("-t")
-        if idle_timeout is None and idle_timeout_orig is not None:
-            idle_timeout = idle_timeout_orig
+        if idle_timeout is None:
+            idle_timeout = "default"
         elif idle_timeout == "none" or idle_timeout == "None":
-            idle_timeout = None
+            idle_timeout = "no timeout"
         elif idle_timeout is not None:
             mult = 1
             if idle_timeout[-1].lower() in "smhd":
@@ -349,7 +342,7 @@ class ListCommand(CLICommand):
             -j                                          - JSON output
             -u <owner>                                  - filter by owner, default: current user only
                 all         - list projects from all users
-                username    - list projects from username            
+                username    - list projects from username
             -s <state>                                  - filter by state, default: active projects only
                 all        - all projects
                 active     - active projects only
