@@ -26,7 +26,7 @@ Using Python API
   cpu_site = ...
   
   # create DD client object
-  from data_dispatcher import DataDispatcherClient
+  from data_dispatcher.api import DataDispatcherClient
   client = DataDispatcherClient(server_url)
   
   #

@@ -294,6 +294,22 @@ time of the project creation, additional authorized users or roles can be specif
         $ ddisp project create -r production,my_group ...
         $ ddisp project create -u alice,bob -r my_group ...
 
+Project states
+..............
+
+There are five different states that a data dispatcher project can be in: active, done, failed, cancelled, or abandoned.
+
+A project is in the *active* state when there are still files to be processed and it hasn't reached the idle_timeout.
+
+A project is in the *done* state when all of its files have been processed successfully.
+
+A project is in the *failed* state when all of its files have finished processing and at least one has failed permanently.
+
+A project is in the *cancelled* state when it has been cancelled by the user.
+
+A project is in the *abandoned* state after the project is idle for longer than the idle_timeout. It can be activated again.
+
+
 Listing projects
 ................
 
@@ -302,7 +318,19 @@ Listing projects
         $ ddisp project list
             -j                                              - JSON output
             -u <owner>                                      - filter by project owner
-            -a "name1=value1 name2=value2 ..."              - filter by project attributes
+                all         - list projects from all users
+                username    - list projects from username
+            -s <state>                                  - filter by state, default: active projects only
+                all        - all projects
+                active     - active projects only
+                done       - projects that are marked done
+                failed     - projects that are marked failed
+                cancelled  - projects that have been cancelled
+                abandoned  - projects that have timed out
+            -n <not_state>                              - filter out by state, default: abandoned projects
+            -a "name1=value1 name2=value2 ..."          - filter by project attributes
+
+
 
 Viewing projects
 ................
@@ -336,8 +364,8 @@ Searching projects
 
 See :ref:`Searching Projects <SearchQL>` for details on search query language
 
-Copying project
-...............
+Copying projects
+................
 
     .. code-block:: shell
 
@@ -348,7 +376,8 @@ Copying project
           -a @<file.json>                                 - JSON file with file attributes to override
           -a "name=value name=value ..."                  - file attributes to override
   
-          -t <worker timeout>|none                        - worker timeout to override
+          -w (<worker timeout>[s|m|h|d] | none)           - worker timeout to override
+          -t (<idle timeout>[s|m|h|d] | none)             - idle timeout to override
 
           -p (json|pprint|id)                             - print created project info as JSON, 
                                                             pprint or just project id (default)
