@@ -178,9 +178,24 @@ class Handler(BaseHandler):
         #print(specs.get("files"))
         db = self.App.db()
         original_project = DBProject.get(db, project_id)
-        worker_timeout = specs.get("worker_timeout", original_project.WorkerTimeout)
         if original_project is None:
             return 404, "Project not found"
+
+        worker_timeout = specs.get("worker_timeout", original_project.WorkerTimeout)
+        idle_timeout = specs.get("idle_timeout", original_project.IdleTimeout)
+        if type(worker_timeout) == float:
+            worker_timeout = worker_timeout
+        elif worker_timeout == "no timeout":
+            worker_timeout = None
+        elif worker_timeout == "default" or worker_timeout == None:
+            worker_timeout = original_project.WorkerTimeout
+        if type(idle_timeout) == float:
+            idle_timeout = idle_timeout
+        elif idle_timeout == "no timeout":
+            idle_timeout = None
+        elif idle_timeout == "default" or idle_timeout == None:
+            idle_timeout = original_project.IdleTimeout
+
         files_updated = []
         for h in original_project.handles():
             attrs = h.Attributes.copy()
@@ -192,7 +207,7 @@ class Handler(BaseHandler):
             ))
         project_attrs = original_project.Attributes.copy()
         project_attrs.update(project_attributes)
-        project = DBProject.create(db, user.Username, attributes=project_attrs, query=original_project.Query, worker_timeout=worker_timeout)
+        project = DBProject.create(db, user.Username, attributes=project_attrs, query=original_project.Query, worker_timeout=worker_timeout, idle_timeout=idle_timeout)
         project.add_files(files_updated)
         project.add_log("event", event="copied", source=project_id, override=dict(
             project=project_attrs, file=file_attributes
@@ -352,8 +367,20 @@ class Handler(BaseHandler):
         project_log = (x.as_jsonable() for x in project.handles_log())
         return json.dumps(project_log), "text/json"
 
-    def projects(self, request, relpath, state=None, not_state="abandoned", owner=None, attributes="",
+    def projects(self, request, relpath, state=None, not_state=None, owner=None, attributes="",
                 with_handles="yes", with_replicas="yes", **args):
+        # default to only show projects owned by the current user
+        user, error = self.authenticated_user()
+        if user is None:
+            return 401, error
+        
+        if owner is None:
+            owner = user.Username
+        elif owner == "all":
+            owner = None
+        else:
+            owner = owner
+
         with_handles = with_handles == "yes"
         with_replicas = with_replicas == "yes"
         attributes = urllib.parse.unquote(attributes)
