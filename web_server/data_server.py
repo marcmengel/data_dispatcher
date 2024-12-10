@@ -278,7 +278,7 @@ class Handler(BaseHandler):
             }
         return json.dumps(out), "text/json"
 
-    def release(self, request, relpath, handle_id=None, failed="no", retry="yes", **args):
+    def release(self, request, relpath, handle_id=None, failed="no", retry="yes", worker_id='', **args):
         if handle_id is None:
             return 400, "File Handle ID (<project_id>:<namespace>:<name>) must be specified"
         user, error = self.authenticated_user()
@@ -288,6 +288,10 @@ class Handler(BaseHandler):
         db = self.App.db()
 
         project_id, namespace, name = DBFileHandle.unpack_id(handle_id)
+
+        handle = project.handle(namespace, name)
+        if worker_id and handle.WorkerID != worker_id:
+            return 403, "Not authorized: wrong worker_id"
 
         project = DBProject.get(db, project_id)
         if project is None:
