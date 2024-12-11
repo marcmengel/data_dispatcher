@@ -289,16 +289,16 @@ class Handler(BaseHandler):
 
         project_id, namespace, name = DBFileHandle.unpack_id(handle_id)
 
-        handle = project.handle(namespace, name)
-        if worker_id and handle.WorkerID != worker_id:
-            return 403, "Not authorized: wrong worker_id"
-
         project = DBProject.get(db, project_id)
         if project is None:
             return 404, "Project not found"
 
         if not user.is_admin() and user.Username != project.Owner:
             return 403, "Not authorized"
+
+        handle = project.handle(namespace, name)
+        if worker_id and handle.WorkerID != worker_id:
+            return 403, "Not authorized: wrong worker_id"
 
         failed = failed == "yes"
         retry = retry == "yes"
