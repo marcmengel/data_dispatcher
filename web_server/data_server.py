@@ -9,6 +9,7 @@ import json, urllib.parse, yaml, secrets, hashlib
 import requests
 from datetime import datetime, timedelta
 from data_dispatcher.query import ProjectQuery
+import os
 
 
 def to_bytes(x):
@@ -278,7 +279,7 @@ class Handler(BaseHandler):
             }
         return json.dumps(out), "text/json"
 
-    def release(self, request, relpath, handle_id=None, failed="no", retry="yes", worker_id='', **args):
+    def release(self, request, relpath, handle_id=None, failed="no", retry="yes", **args):
         if handle_id is None:
             return 400, "File Handle ID (<project_id>:<namespace>:<name>) must be specified"
         user, error = self.authenticated_user()
@@ -295,10 +296,6 @@ class Handler(BaseHandler):
 
         if not user.is_admin() and user.Username != project.Owner:
             return 403, "Not authorized"
-
-        handle = project.handle(namespace, name)
-        if worker_id and handle.WorkerID != worker_id:
-            return 403, "Not authorized: wrong worker_id"
 
         failed = failed == "yes"
         retry = retry == "yes"
@@ -494,12 +491,18 @@ class App(BaseApp, Logged):
             #self.debug("Daemon web servier URL is not configured")
             pass
 
-def create_application(config):
+def create_application(config=None):
     if isinstance(config, str):
         config = yaml.load(open(config, "r"), Loader=yaml.SafeLoader)
+    else:
+        cfg = os.environ.get("DATA_DISPATCHER_CFG")
+        config = yaml.load(open(cfg, "r"), Loader=yaml.SafeLoader)
+
     prefix = config.get("web_server", {}).get("data_prefix", "")
     return App(config, prefix)
 
+
+application = create_application()
 
 if __name__ == "__main__":
     import getopt, sys

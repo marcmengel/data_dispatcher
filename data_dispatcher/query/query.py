@@ -267,7 +267,7 @@ class ProjectQueryConverter(Converter):
 class ProjectQuery(object):
     
     QueryParser = Lark(ProjectQueryGrammar, start="metadata_expression")
-
+    
     def __init__(self, text):
         self.Text = text
         self.Parsed = self.Converted = None
