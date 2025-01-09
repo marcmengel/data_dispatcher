@@ -9,6 +9,7 @@ import json, urllib.parse, yaml, secrets, hashlib
 import requests
 from datetime import datetime, timedelta
 from data_dispatcher.query import ProjectQuery
+import os
 
 
 def to_bytes(x):
@@ -494,12 +495,18 @@ class App(BaseApp, Logged):
             #self.debug("Daemon web servier URL is not configured")
             pass
 
-def create_application(config):
+def create_application(config=None):
     if isinstance(config, str):
         config = yaml.load(open(config, "r"), Loader=yaml.SafeLoader)
+    else:
+        cfg = os.environ.get("DATA_DISPATCHER_CFG")
+        config = yaml.load(open(cfg, "r"), Loader=yaml.SafeLoader)
+
     prefix = config.get("web_server", {}).get("data_prefix", "")
     return App(config, prefix)
 
+
+application = create_application()
 
 if __name__ == "__main__":
     import getopt, sys
